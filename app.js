@@ -36,7 +36,7 @@ const {
 } = process.env;
 
 app.set('trust proxy', true);
-
+app.use(express.urlencoded({ extended: false }));
 app.use('/', route);
 
 // Start the server
