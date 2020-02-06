@@ -1,0 +1,28 @@
+{
+  "name": "youtube_ranking_api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dgu-pmos/YOUTUBE_RANKING_API.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dgu-pmos/YOUTUBE_RANKING_API/issues"
+  },
+  "homepage": "https://github.com/dgu-pmos/YOUTUBE_RANKING_API#readme",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "moment": "^2.24.0",
+    "moment-timezone": "^0.5.27",
+    "mongodb-backup-fixed": "^1.7.2",
+    "mongoose": "^5.8.11",
+    "node-cron": "^2.0.3"
+  }
+}
