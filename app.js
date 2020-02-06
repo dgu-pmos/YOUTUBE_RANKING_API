@@ -1,7 +1,7 @@
-var express = require('express');
-var http = require('http');
-var app = express();
-var server = http.createServer(app);
+'use strict';
+
+const express = require('express');
+const app = express();
 const Channel = require('./models/channel');
 const Video = require('./models/video');
 const axios = require('axios');
@@ -15,6 +15,8 @@ require('dotenv').config();
 connect();
 const route = require('./routes');
 
+let response;
+let i, j, res_id, res_data, k;
 let dummy_ids = "UCwx6n_4OcLgzAGdty0RWCoA,UC7Krez5EI8pXKHnYWsE-zUw,UCIG4gr_wIy5CIlcFciUbIQw";
 let video_ids = "";
 let channel_list = [];
@@ -33,22 +35,29 @@ const {
     BACKUP_PASSWORD,
 } = process.env;
 
+app.set('trust proxy', true);
+
 app.use('/', route);
 
-server.listen(3000, '127.0.0.1', function() {
-    console.log('server listen');
+// Start the server
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, async () => {
+    console.log(`App listening on port ${PORT}`);
+    console.log('Press Ctrl+C to quit.');
 });
 
 cron.schedule('0 0 * * *', async function(){
     // 이전 데이터 tar로 백업
+    /*
     backup({
-        uri: `mongodb://${BACKUP_ID}:${BACKUP_PASSWORD}@localhost:27017/youtube`,
+        uri: `mongodb://${BACKUP_ID}:${BACKUP_PASSWORD}@211.63.192.209:27017/youtube`,
         root: __dirname,
         tar: moment().format('YYYY-MM-DD hh:mm:ss')+'.tar'
     });
     // 현재 데이터들을 다 비움
     await Channel.remove({});
     await Video.remove({});
+    */
     // 채널 정보 저장
     response = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
     params: {
@@ -65,12 +74,14 @@ cron.schedule('0 0 * * *', async function(){
             viewCount: response.data.items[i].statistics.viewCount,
             subCount: response.data.items[i].statistics.subscriberCount,
             videoCount: response.data.items[i].statistics.videoCount,
-            createdAt: response.data.items[i].snippet.publishedAt,
+            publishedAt: response.data.items[i].snippet.publishedAt,
+            createdAt: moment(),
+            category: 'default',
         });
         await channel.save();
     }
     // 각 채널에 해당하는 동영상 정보 조회 및 저장
-    channel_list = await Channel.find({});
+    channel_list = await Channel.find({createdAt: {"$gte": moment().format('YYYY-MM-DD')}});
     // 동영상 id 조회
     for(i = 0 ; i < channel_list.length ; i++) {
         video_ids = "";
@@ -111,13 +122,14 @@ cron.schedule('0 0 * * *', async function(){
                 likeCount: res_data.data.items[k].statistics.likeCount,
                 dislikeCount: res_data.data.items[k].statistics.dislikeCount,
                 commentCount: res_data.data.items[k].statistics.commentCount,
-                createdAt: res_data.data.items[k].snippet.publishedAt,
+                publishedAt: res_data.data.items[k].snippet.publishedAt,
+                createdAt: moment(),
             });
             await video.save();
         }
     }
     for(i = 0 ; i < channel_list.length ; i++) {
-        video_list = await Video.find({channel: channel_list[i]._id});
+        video_list = await Video.find({channel: channel_list[i]._id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}});
         video_list.sort((a,b) => (a.viewCount > b.viewCount) ? -1 : ( (b.viewCount > a.viewCount) ? 1 : 0));
         for(j = 0 ; j < video_list.length ; j++) {
             weekly_viewCount += video_list[i].viewCount;
@@ -137,7 +149,7 @@ cron.schedule('0 0 * * *', async function(){
         //console.log(i+' th fourth index');
         fourth_index = first_index + ((0.04 * weekly_viewCount) * second_index / 100)+((0.005 * weekly_viewCount) * third_index / 100);
         //console.log(first_index + " + " + "((0.04 * " + weekly_viewCount + ") * " + second_index + " / 100) + ((0.005 * " + weekly_viewCount+ ") * " + third_index + " / 100) = "+ fourth_index);
-        await Channel.updateOne({ id: channel_list[i].id }, { 
+        await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
             first_index: first_index,
             second_index: second_index,
             third_index: third_index,
@@ -149,3 +161,5 @@ cron.schedule('0 0 * * *', async function(){
         weekly_commentCount = 0;
     }
 });
+
+module.exports = app;

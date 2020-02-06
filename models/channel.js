@@ -29,8 +29,16 @@ const channelSchema = new Schema({
         type: Number,
         required: true,
     },
+    publishedAt: {
+        type: Date,
+        required: true,
+    },
     createdAt: {
         type: Date,
+        required: true,
+    },
+    category: {
+        type: String,
         required: true,
     },
     first_index: {

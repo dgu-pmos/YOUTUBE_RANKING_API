@@ -8,7 +8,7 @@ const {
     NODE_ENV
 } = process.env;
 // 접근할 몽고디비 URL
-const MONGO_URL = `mongodb://${MONGO_ID}:${MONGO_PASSWORD}@localhost:27017`;
+const MONGO_URL = `mongodb+srv://${MONGO_ID}:${MONGO_PASSWORD}@youtube-cluster-zmd4o.gcp.mongodb.net/test?retryWrites=true&w=majority`;
 
 module.exports = () => {
     // connect 함수는 데이터베이스(youtube_test)와 연결한다.
