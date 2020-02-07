@@ -37,6 +37,10 @@ const channelSchema = new Schema({
         type: Date,
         required: true,
     },
+    country: {
+        type: String,
+        required: true,
+    },
     category: {
         type: String,
         required: true,
