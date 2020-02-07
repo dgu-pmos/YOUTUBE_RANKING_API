@@ -35,6 +35,11 @@ const {
     BACKUP_PASSWORD,
 } = process.env;
 
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
 app.set('trust proxy', true);
 app.use(express.urlencoded({ extended: false }));
 app.use('/', route);
@@ -137,28 +142,44 @@ cron.schedule('0 0 * * *', async function(){
             weekly_dislikeCount += video_list[i].dislikeCount;
             weekly_commentCount += video_list[i].commentCount;
         }
-        //console.log(i+' th first index');
-        first_index = weekly_viewCount / video_list.length + video_list[0].viewCount;
-        //console.log(weekly_viewCount + " / " + video_list.length + " + " + video_list[0].viewCount +" = " + first_index);
-        //console.log(i+' th second index');
-        second_index = (weekly_likeCount / (weekly_likeCount + weekly_dislikeCount)) * 100;
-        //console.log("(" + weekly_likeCount + " / (" + weekly_likeCount + "+" + weekly_dislikeCount + ")) * 100 = " + second_index);
-        //console.log(i+' th third index');
-        third_index = (weekly_commentCount / channel_list[i].subCount) * 100;
-        //console.log("(" + weekly_commentCount + " / " + channel_list[i].subCount + ") * 100 = " + third_index);
-        //console.log(i+' th fourth index');
-        fourth_index = first_index + ((0.04 * weekly_viewCount) * second_index / 100)+((0.005 * weekly_viewCount) * third_index / 100);
-        //console.log(first_index + " + " + "((0.04 * " + weekly_viewCount + ") * " + second_index + " / 100) + ((0.005 * " + weekly_viewCount+ ") * " + third_index + " / 100) = "+ fourth_index);
+        VF_index = weekly_viewCount / video_list.length + video_list[0].viewCount;
+        VE_index = (weekly_likeCount / (weekly_likeCount + weekly_dislikeCount)) * 100;
+        VC_index = (weekly_commentCount / channel_list[i].subCount) * 100;
+        BC_index = VF_index + ((0.04 * weekly_viewCount) * VE_index / 100)+((0.005 * weekly_viewCount) * VC_index / 100);
         await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
-            first_index: first_index,
-            second_index: second_index,
-            third_index: third_index,
-            fourth_index: fourth_index
+            VF_index: VF_index,
+            VE_index: VE_index,
+            VC_index: VC_index,
+            BC_index: BC_index
         });
         weekly_viewCount = 0;
         weekly_likeCount = 0;
         weekly_dislikeCount = 0;
         weekly_commentCount = 0;
+    }
+    channel_list.sort((a,b) => (a.VF_index > b.VF_index) ? -1 : ( (b.VF_index > a.VF_index) ? 1 : 0));
+    for(i = 0 ; i < channel_list.length ; i++) {
+        await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
+            VF_rank: i+1,
+        });
+    }
+    channel_list.sort((a,b) => (a.VE_index > b.VE_index) ? -1 : ( (b.VE_index > a.VE_index) ? 1 : 0));
+    for(i = 0 ; i < channel_list.length ; i++) {
+        await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
+            VE_rank: i+1,
+        });
+    }
+    channel_list.sort((a,b) => (a.VC_index > b.VC_index) ? -1 : ( (b.VC_index > a.VC_index) ? 1 : 0));
+    for(i = 0 ; i < channel_list.length ; i++) {
+        await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
+            VC_rank: i+1,
+        });
+    }
+    channel_list.sort((a,b) => (a.BC_index > b.BC_index) ? -1 : ( (b.BC_index > a.BC_index) ? 1 : 0));
+    for(i = 0 ; i < channel_list.length ; i++) {
+        await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
+            BC_rank: i+1,
+        });
     }
 });
 

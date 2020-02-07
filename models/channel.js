@@ -41,19 +41,35 @@ const channelSchema = new Schema({
         type: String,
         required: true,
     },
-    first_index: {
+    VF_index: {
         type: Number,
         required: false,
     },
-    second_index: {
+    VE_index: {
         type: Number,
         required: false,
     },
-    third_index: {
+    VC_index: {
         type: Number,
         required: false,
     },
-    fourth_index: {
+    BC_index: {
+        type: Number,
+        required: false,
+    },
+    VF_rank: {
+        type: Number,
+        required: false,
+    },
+    VE_rank: {
+        type: Number,
+        required: false,
+    },
+    VC_rank: {
+        type: Number,
+        required: false,
+    },
+    BC_rank: {
         type: Number,
         required: false,
     },
