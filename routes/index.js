@@ -33,4 +33,12 @@ router.get('/:sort/:category/:keyword/:page', async (req, res) => {
     res.status(200).send(result);
 });
 
+router.get('/youtuber/:id', async (req, res) => {
+    let result = await Channel
+    .find({id: req.params.id})
+    .sort([['createdAt', 'descending']]);
+
+    res.status(200).send(result);
+});
+
 module.exports = router;

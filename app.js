@@ -16,11 +16,8 @@ require('dotenv').config();
 connect();
 const route = require('./routes');
 
-
-let response;
-let i, j, res_id, res_data, k;
+let response, i, j, res_id, res_data, k, video_ids, sub_video_ids, video_id_params, video_params;
 let dummy_ids = "UCwx6n_4OcLgzAGdty0RWCoA,UC7Krez5EI8pXKHnYWsE-zUw,UCIG4gr_wIy5CIlcFciUbIQw";
-let video_ids;
 let channel_list = [];
 let weekly_viewCount = 0;
 let weekly_likeCount = 0;
@@ -32,8 +29,7 @@ let VC_index = 0;
 let BC_index = 0;
 let video_list = [];
 let nextToken = undefined;
-let video_id_params, video_params;
-let sub_video_ids;
+let channel_list_VF, channel_list_VE, channel_list_VC, channel_list_BC;
 /*
 for backup
 const {
@@ -58,7 +54,7 @@ app.listen(PORT, async () => {
     console.log('Press Ctrl+C to quit.');
 });
 
-cron.schedule('* * * * *', async function(){
+cron.schedule('0 0 * * *', async function(){
     /*
     // 이전 데이터 tar로 백업, for backup
     backup({
@@ -79,6 +75,7 @@ cron.schedule('* * * * *', async function(){
         id: dummy_ids,
     }
     });
+
     for(i = 0 ; i < response.data.items.length ; i++) {
         let channel = new Channel({
             id: response.data.items[i].id,
@@ -103,7 +100,7 @@ cron.schedule('* * * * *', async function(){
             key : "AIzaSyAqLZxZPmuOd1iuAMf_GsiV1zzQvcW5zqY",
             part: "id",
             channelId: channel_list[i].id,
-            publishedAfter: "2019-06-01T00:00:00.000Z",
+            publishedAfter: "2019-10-01T00:00:00.000Z",
             type: "video",
             order: "date",
             maxResults: "50",
@@ -174,27 +171,35 @@ cron.schedule('* * * * *', async function(){
         weekly_dislikeCount = 0;
         weekly_commentCount = 0;
     }
-    channel_list.sort((a,b) => (a.VF_index > b.VF_index) ? -1 : ( (b.VF_index > a.VF_index) ? 1 : 0));
-    for(i = 0 ; i < channel_list.length ; i++) {
-        await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
+    channel_list_VF = await Channel
+    .find({createdAt: {"$gte": moment().format('YYYY-MM-DD')}})
+    .sort([['VF_index', 'descending']]);
+    for(i = 0 ; i < channel_list_VF.length ; i++) {
+        await Channel.updateOne({ id: channel_list_VF[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
             VF_rank: i+1,
         });
     }
-    channel_list.sort((a,b) => (a.VE_index > b.VE_index) ? -1 : ( (b.VE_index > a.VE_index) ? 1 : 0));
-    for(i = 0 ; i < channel_list.length ; i++) {
-        await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
+    channel_list_VE = await Channel
+    .find({createdAt: {"$gte": moment().format('YYYY-MM-DD')}})
+    .sort([['VE_index', 'descending']]);
+    for(i = 0 ; i < channel_list_VE.length ; i++) {
+        await Channel.updateOne({ id: channel_list_VE[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
             VE_rank: i+1,
         });
     }
-    channel_list.sort((a,b) => (a.VC_index > b.VC_index) ? -1 : ( (b.VC_index > a.VC_index) ? 1 : 0));
-    for(i = 0 ; i < channel_list.length ; i++) {
-        await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
+    channel_list_VC = await Channel
+    .find({createdAt: {"$gte": moment().format('YYYY-MM-DD')}})
+    .sort([['VC_index', 'descending']]);
+    for(i = 0 ; i < channel_list_VC.length ; i++) {
+        await Channel.updateOne({ id: channel_list_VC[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
             VC_rank: i+1,
         });
     }
-    channel_list.sort((a,b) => (a.BC_index > b.BC_index) ? -1 : ( (b.BC_index > a.BC_index) ? 1 : 0));
-    for(i = 0 ; i < channel_list.length ; i++) {
-        await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
+    channel_list_BC = await Channel
+    .find({createdAt: {"$gte": moment().format('YYYY-MM-DD')}})
+    .sort([['BC_index', 'descending']]);
+    for(i = 0 ; i < channel_list_BC.length ; i++) {
+        await Channel.updateOne({ id: channel_list_BC[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
             BC_rank: i+1,
         });
     }
