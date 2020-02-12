@@ -41,4 +41,5 @@ module.exports = () => {
 
     require('./channel');
     require('./video');
+    require('./user');
 };

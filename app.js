@@ -2,8 +2,10 @@
 
 const express = require('express');
 const app = express();
+var cookieParser = require('cookie-parser');
 const Channel = require('./models/channel');
 const Video = require('./models/video');
+const User = require('./models/user');
 const axios = require('axios');
 const connect = require('./models');
 const cron = require('node-cron');
@@ -12,12 +14,12 @@ require('moment-timezone');
 moment.tz.setDefault("Asia/Seoul");
 require('dotenv').config();
 // const backup = require('mongodb-backup-fixed'); // for backup
-
 connect();
 const route = require('./routes');
+const APP_KEY = process.env.APP_KEY;
 
-let response, i, j, res_id, res_data, k, video_ids, sub_video_ids, video_id_params, video_params;
-let dummy_ids = "UCwx6n_4OcLgzAGdty0RWCoA,UC7Krez5EI8pXKHnYWsE-zUw,UCIG4gr_wIy5CIlcFciUbIQw";
+let channel_id_params, channel_ids, res_channel_ids, i, j, res_id, res_data, k, video_ids, sub_video_ids, video_id_params;
+let channel_arr = [];
 let channel_list = [];
 let weekly_viewCount = 0;
 let weekly_likeCount = 0;
@@ -30,6 +32,7 @@ let BC_index = 0;
 let video_list = [];
 let nextToken = undefined;
 let channel_list_VF, channel_list_VE, channel_list_VC, channel_list_BC;
+
 /*
 for backup
 const {
@@ -44,7 +47,9 @@ app.use(function(req, res, next) {
     next();
 });
 app.set('trust proxy', true);
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 app.use('/', route);
 
 // Start the server
@@ -54,53 +59,55 @@ app.listen(PORT, async () => {
     console.log('Press Ctrl+C to quit.');
 });
 
-cron.schedule('0 0 * * *', async function(){
-    /*
-    // 이전 데이터 tar로 백업, for backup
-    backup({
-        uri: `mongodb://${BACKUP_ID}:${BACKUP_PASSWORD}@211.63.192.209:27017/youtube`,
-        root: __dirname,
-        tar: moment().format('YYYY-MM-DD hh:mm:ss')+'.tar'
-    });
-    // 현재 데이터들을 다 비움
-    await Channel.remove({});
-    await Video.remove({});
-    */
+cron.schedule('* * * * *', async function(){
+    channel_ids = await User.find({type: 'youtuber'});
+    for(i = 0 ; i < channel_ids.length ; i++)
+        channel_arr[i] = channel_ids[i].id;
+    channel_ids = channel_arr.join(',');
 
     // 채널 정보 저장
-    response = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
-    params: {
-        key : "AIzaSyAqLZxZPmuOd1iuAMf_GsiV1zzQvcW5zqY",
+    channel_id_params = {
+        key : APP_KEY,
         part: "id,snippet,statistics",
-        id: dummy_ids,
-    }
-    });
-
-    for(i = 0 ; i < response.data.items.length ; i++) {
-        let channel = new Channel({
-            id: response.data.items[i].id,
-            channel_name: response.data.items[i].snippet.title,
-            img: response.data.items[i].snippet.thumbnails.default.url,
-            viewCount: response.data.items[i].statistics.viewCount,
-            subCount: response.data.items[i].statistics.subscriberCount,
-            videoCount: response.data.items[i].statistics.videoCount,
-            publishedAt: response.data.items[i].snippet.publishedAt,
-            createdAt: moment(),
-            country: response.data.items[i].snippet.country,
-            category: 'default',
+        id: channel_ids,
+        maxResults: "50",
+    };
+    do {
+        if(nextToken)
+            channel_id_params.pageToken = nextToken;
+        res_channel_ids = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
+            params: channel_id_params
         });
-        await channel.save();
-    }
+        nextToken = res_channel_ids.data.nextPageToken;
+        for(i = 0 ; i < res_channel_ids.data.items.length ; i++) {
+            let category = await User.findOne({id: res_channel_ids.data.items[i].id})
+            let channel = new Channel({
+                id: res_channel_ids.data.items[i].id,
+                channel_name: res_channel_ids.data.items[i].snippet.title,
+                img: res_channel_ids.data.items[i].snippet.thumbnails.default.url,
+                viewCount: res_channel_ids.data.items[i].statistics.viewCount,
+                subCount: res_channel_ids.data.items[i].statistics.subscriberCount,
+                videoCount: res_channel_ids.data.items[i].statistics.videoCount,
+                publishedAt: res_channel_ids.data.items[i].snippet.publishedAt,
+                createdAt: moment(),
+                country: res_channel_ids.data.items[i].snippet.country,
+                category: category.category,
+            });
+            await channel.save();
+        }
+    } while(nextToken)
+    nextToken = undefined;
+    
     // 각 채널에 해당하는 동영상 정보 조회 및 저장
     channel_list = await Channel.find({createdAt: {"$gte": moment().format('YYYY-MM-DD')}});
     // 동영상 id 조회
     for(i = 0 ; i < channel_list.length ; i++) {
         video_ids = [];
         video_id_params = {
-            key : "AIzaSyAqLZxZPmuOd1iuAMf_GsiV1zzQvcW5zqY",
+            key : APP_KEY,
             part: "id",
             channelId: channel_list[i].id,
-            publishedAfter: "2019-10-01T00:00:00.000Z",
+            publishedAfter: moment().add("-7","d")._d,
             type: "video",
             order: "date",
             maxResults: "50",
@@ -115,15 +122,15 @@ cron.schedule('0 0 * * *', async function(){
             for(j = 0 ; j < res_id.data.items.length ; j++)
                 video_ids.push(res_id.data.items[j].id.videoId);
         } while(nextToken)
-        // 동영상 상세 정보 조회
+        nextToken = undefined;
         j = 0;
-        do
-        {
+        // 동영상 상세 정보 조회
+        do {
             sub_video_ids = video_ids.slice((50 * j), (50 * (j+1)));
             j++;
             res_data = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
                 params: {
-                    key : "AIzaSyAqLZxZPmuOd1iuAMf_GsiV1zzQvcW5zqY",
+                    key : APP_KEY,
                     part: "id,snippet,statistics",
                     id: sub_video_ids.join(','),
                 }
@@ -144,22 +151,39 @@ cron.schedule('0 0 * * *', async function(){
                 });
                 await video.save();
             }
-        }while(Math.ceil(video_ids.length / 50) > j)
+        } while(Math.ceil(video_ids.length / 50) > j)
     }
+
     for(i = 0 ; i < channel_list.length ; i++) {
         video_list = await Video.find({channel: channel_list[i]._id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}});
-        video_list.sort((a,b) => (a.viewCount > b.viewCount) ? -1 : ( (b.viewCount > a.viewCount) ? 1 : 0));
-        for(j = 0 ; j < video_list.length ; j++) {
-            weekly_viewCount += video_list[i].viewCount;
-            weekly_likeCount += video_list[i].likeCount;
-            weekly_dislikeCount += video_list[i].dislikeCount;
-            weekly_commentCount += video_list[i].commentCount;
+        if(video_list.length === 0) {
+            weekly_viewCount = 0;
+            weekly_likeCount = 0;
+            weekly_dislikeCount = 0;
+            weekly_commentCount = 0;
+        } else {
+            video_list.sort((a,b) => (a.viewCount > b.viewCount) ? -1 : ( (b.viewCount > a.viewCount) ? 1 : 0));
+            for(j = 0 ; j < video_list.length ; j++) {
+                weekly_viewCount += video_list[j].viewCount;
+                weekly_likeCount += video_list[j].likeCount;
+                weekly_dislikeCount += video_list[j].dislikeCount;
+                weekly_commentCount += video_list[j].commentCount;
+            }
         }
-        VF_index = weekly_viewCount / video_list.length + video_list[0].viewCount;
-        VE_index = (weekly_likeCount / (weekly_likeCount + weekly_dislikeCount)) * 100;
-        VC_index = (weekly_commentCount / channel_list[i].subCount) * 100;
-        BC_index = VF_index + ((0.04 * weekly_viewCount) * VE_index / 100)+((0.005 * weekly_viewCount) * VC_index / 100);
-
+        if(video_list.length === 0)
+        {
+            VF_index = 0;
+            VE_index = 0;
+            VC_index = 0;
+            BC_index = 0;
+        }
+        else
+        {
+            VF_index = weekly_viewCount / video_list.length + video_list[0].viewCount;
+            VE_index = (weekly_likeCount / (weekly_likeCount + weekly_dislikeCount)) * 100;
+            VC_index = (weekly_commentCount / channel_list[i].subCount) * 100;
+            BC_index = VF_index + ((0.04 * weekly_viewCount) * VE_index / 100)+((0.005 * weekly_viewCount) * VC_index / 100);
+        }
         await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 
             VF_index: VF_index,
             VE_index: VE_index,

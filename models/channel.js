@@ -39,11 +39,11 @@ const channelSchema = new Schema({
     },
     country: {
         type: String,
-        required: true,
+        required: false,
     },
     category: {
         type: String,
-        required: true,
+        required: false,
     },
     VF_index: {
         type: Number,
