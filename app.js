@@ -59,7 +59,7 @@ app.listen(PORT, async () => {
     console.log('Press Ctrl+C to quit.');
 });
 
-cron.schedule('* * * * *', async function(){
+cron.schedule('0 0 * * *', async function(){
     channel_ids = await User.find({type: 'youtuber'});
     for(i = 0 ; i < channel_ids.length ; i++)
         channel_arr[i] = channel_ids[i].id;
