@@ -84,8 +84,6 @@ router.post('/admin', authUtil.validToken, async (req, res) => {
 
 router.put('/admin/:id', authUtil.validToken, async (req, res) => {
     let json = {};
-    json.name = req.body.id;
-    json.pw = req.body.pw;
     json.name = req.body.name;
     json.category = req.body.category;
     if(json.pw) {

@@ -13,7 +13,6 @@ const moment = require('moment');
 require('moment-timezone');
 moment.tz.setDefault("Asia/Seoul");
 require('dotenv').config();
-// const backup = require('mongodb-backup-fixed'); // for backup
 connect();
 const route = require('./routes');
 const APP_KEY = process.env.APP_KEY;
@@ -32,14 +31,6 @@ let BC_index = 0;
 let video_list = [];
 let nextToken = undefined;
 let channel_list_VF, channel_list_VE, channel_list_VC, channel_list_BC;
-
-/*
-for backup
-const {
-    BACKUP_ID,
-    BACKUP_PASSWORD,
-} = process.env;
-*/
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -97,7 +88,6 @@ cron.schedule('0 0 * * *', async function(){
         }
     } while(nextToken)
     nextToken = undefined;
-    
     // 각 채널에 해당하는 동영상 정보 조회 및 저장
     channel_list = await Channel.find({createdAt: {"$gte": moment().format('YYYY-MM-DD')}});
     // 동영상 id 조회
@@ -122,7 +112,6 @@ cron.schedule('0 0 * * *', async function(){
             for(j = 0 ; j < res_id.data.items.length ; j++)
                 video_ids.push(res_id.data.items[j].id.videoId);
         } while(nextToken)
-        nextToken = undefined;
         j = 0;
         // 동영상 상세 정보 조회
         do {
@@ -164,10 +153,14 @@ cron.schedule('0 0 * * *', async function(){
         } else {
             video_list.sort((a,b) => (a.viewCount > b.viewCount) ? -1 : ( (b.viewCount > a.viewCount) ? 1 : 0));
             for(j = 0 ; j < video_list.length ; j++) {
-                weekly_viewCount += video_list[j].viewCount;
-                weekly_likeCount += video_list[j].likeCount;
-                weekly_dislikeCount += video_list[j].dislikeCount;
-                weekly_commentCount += video_list[j].commentCount;
+                if(video_list[j].viewCount)
+                    weekly_viewCount += video_list[j].viewCount;
+                if(video_list[j].likeCount)
+                    weekly_likeCount += video_list[j].likeCount;
+                if(video_list[j].dislikeCount)
+                    weekly_dislikeCount += video_list[j].dislikeCount;
+                if(video_list[j].commentCount)
+                    weekly_commentCount += video_list[j].commentCount;
             }
         }
         if(video_list.length === 0)
@@ -180,8 +173,14 @@ cron.schedule('0 0 * * *', async function(){
         else
         {
             VF_index = weekly_viewCount / video_list.length + video_list[0].viewCount;
-            VE_index = (weekly_likeCount / (weekly_likeCount + weekly_dislikeCount)) * 100;
-            VC_index = (weekly_commentCount / channel_list[i].subCount) * 100;
+            if((weekly_likeCount + weekly_dislikeCount) == 0)
+                VE_index = 0;
+            else
+                VE_index = (weekly_likeCount / (weekly_likeCount + weekly_dislikeCount)) * 100;
+            if(channel_list[i].subCount == 0)
+                VC_index = 0;
+            else
+                VC_index = (weekly_commentCount / channel_list[i].subCount) * 100;
             BC_index = VF_index + ((0.04 * weekly_viewCount) * VE_index / 100)+((0.005 * weekly_viewCount) * VC_index / 100);
         }
         await Channel.updateOne({ id: channel_list[i].id, createdAt: {"$gte": moment().format('YYYY-MM-DD')}}, { 

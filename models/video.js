@@ -21,23 +21,23 @@ const videoSchema = new Schema({
     },
     video_name: {
         type: String,
-        required: true,
+        required: false,
     },
     viewCount: {
         type: Number,
-        required: true,
+        required: false,
     },
     likeCount: {
         type: Number,
-        required: true,
+        required: false,
     },
     dislikeCount: {
         type: Number,
-        required: true,
+        required: false,
     },
     commentCount: {
         type: Number,
-        required: true,
+        required: false,
     },
     publishedAt: {
         type: Date,
