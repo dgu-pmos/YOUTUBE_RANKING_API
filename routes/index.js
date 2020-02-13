@@ -11,7 +11,7 @@ moment.tz.setDefault("Asia/Seoul");
 router.use('/auth', require('./auth'));
 
 router.get('/:sort/:category/:keyword/:page', async (req, res) => {
-    const maxPage = Math.ceil(await Channel.countDocuments({ createdAt: {$gte: moment().format('YYYY-MM-DD')}}) / 30);
+    const maxPage = Math.ceil(await Channel.countDocuments({ createdAt: {$gte: moment().format('YYYY-MM-DD')}}) / 10);
     let condition = {
         createdAt: {"$gte": moment().format('YYYY-MM-DD')}
     };
