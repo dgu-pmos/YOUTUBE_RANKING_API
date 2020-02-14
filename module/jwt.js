@@ -8,12 +8,6 @@ const options = {
     issuer: "pmos"
 }
 
-const refreshOptions = {
-    algorithm: "HS256",
-    expiresIn: "1d",
-    issuer: "pmos"
-}
-
 module.exports = {
     sign: (json) => {
         const payload = {

@@ -23,6 +23,14 @@ const videoSchema = new Schema({
         type: String,
         required: false,
     },
+    description: {
+        type: String,
+        required: false,
+    },
+    img: {
+        type: String,
+        required: true,
+    },
     viewCount: {
         type: Number,
         required: false,
@@ -36,6 +44,14 @@ const videoSchema = new Schema({
         required: false,
     },
     commentCount: {
+        type: Number,
+        required: false,
+    },
+    length: {
+        type: String,
+        required: false,
+    },
+    category: {
         type: Number,
         required: false,
     },

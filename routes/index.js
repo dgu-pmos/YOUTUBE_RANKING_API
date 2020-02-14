@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+const Video = require('../models/video');
 const Channel = require('../models/channel');
 const User = require('../models/user');
 const authUtil = require('../module/authUtil');
@@ -7,8 +8,17 @@ const missParameters = require('../module/missParameters');
 const moment = require('moment');
 require('moment-timezone');
 moment.tz.setDefault("Asia/Seoul");
+require("moment-duration-format");
 
 router.use('/auth', require('./auth'));
+
+/*
+const cateCode = require('../module/cateCode');
+router.get('/test', (req, res) => {
+    console.log(cateCode[1]);
+    return;
+});
+*/
 
 router.get('/:sort/:category/:keyword/:page', async (req, res) => {
     const maxPage = Math.ceil(await Channel.countDocuments({ createdAt: {$gte: moment().format('YYYY-MM-DD')}}) / 10);
@@ -45,10 +55,14 @@ router.get('/youtuber/:id', async (req, res) => {
     return res.status(200).send(result);
 });
 
-router.get('/admin', authUtil.validToken, async (req, res) => {
+router.get('/admin/:page', authUtil.validToken, async (req, res) => {
+    const maxPage = Math.ceil(await User.countDocuments() / 10);
     const result = await User
     .find({})
-    .sort([['createdAt', 'descending']]);
+    .sort([['createdAt', 'descending']])
+    .skip((10 * req.params.page) - 10)
+    .limit(10);
+    result.push({maxPage : maxPage});
     return res.status(200).send(result);
 });
 

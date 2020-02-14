@@ -4,12 +4,13 @@ const User = require('../../models/user');
 const missParameters = require('../../module/missParameters');
 const bcrypt = require('bcrypt');
 const jwt = require('../../module/jwt');
+const authUtil = require('../../module/authUtil');
 const moment = require('moment');
 require('moment-timezone');
 moment.tz.setDefault("Asia/Seoul");
 
 // 로그인 라우트
-router.post('/signup', async (req, res) => {
+router.post('/signup', authUtil.checkNoToken, async (req, res) => {
     // request body로부터 로그인 정보를 받는다.
     let json = {};
     json.id  = req.body.id;
@@ -40,7 +41,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // 로그인 라우트
-router.post('/signin', async (req, res) => {
+router.post('/signin', authUtil.checkNoToken, async (req, res) => {
     // request body로부터 로그인 정보를 받는다.
     let json = {};
     json.id = req.body.id;
