@@ -77,7 +77,7 @@ router.post('/check', async (req, res) => {
     const result = jwt.verify(req.headers.token);
     if(result == -3)
         return res.status(404).send('expired token');   
-    else if(result == -2 || user == -1)
+    else if(result == -2 || result == -1)
         return res.status(404).send('invalid token');
     else   
         return res.status(200).send('valid token');
