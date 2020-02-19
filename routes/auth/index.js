@@ -81,6 +81,6 @@ router.post('/check', async (req, res) => {
         return res.status(404).send('invalid token');
     else   
         return res.status(200).send('valid token');
-})
+});
 
 module.exports = router;
