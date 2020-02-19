@@ -23,10 +23,11 @@ const authUtil = {
         }
     },
     checkNoToken: (req, res, next) => {
-        if(req.headers.token) {
-            return res.status(404).send('already have token');
-        } else {
+        const user = jwt.verify(req.headers.token); 
+        if(user == -1 || user == -2 || user == -3) {
             next();
+        } else {
+            return res.status(404).send('already have token');
         }
     }
 };
