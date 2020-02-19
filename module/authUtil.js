@@ -11,8 +11,13 @@ const authUtil = {
             return res.status(404).send('empty jwt token');
         } else {
             // token을 verify 하고 return 값을 user에 담는다.
-            const user = jwt.verify(token);            
-            req.decoded = user;            
+            const user = jwt.verify(token);   
+            if(user == -3)
+                return res.status(404).send('expired token');   
+            else if(user == -2 || user == -1)
+                return res.status(404).send('invalid token');
+            else     
+                req.decoded = user;            
             // request의 decoded에 user 정보를 담고 다음 함수에 넘긴다. 
             next();
         }
