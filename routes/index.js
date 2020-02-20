@@ -23,7 +23,6 @@ router.get('/test', (req, res) => {
 */
 
 router.get('/:sort/:category/:keyword/:page', async (req, res) => {
-    const maxPage = Math.ceil(await Channel.countDocuments({ createdAt: {$gte: moment().format('YYYY-MM-DD')}}) / 10);
     let condition = {
         createdAt: {"$gte": moment().format('YYYY-MM-DD')}
     };
@@ -44,6 +43,7 @@ router.get('/:sort/:category/:keyword/:page', async (req, res) => {
     .sort(sort)
     .skip((10 * req.params.page) - 10)
     .limit(10);
+    const maxPage = Math.ceil(await Channel.countDocuments(condition) / 10);
     return res.status(200).send({
         result,
         maxPage,
